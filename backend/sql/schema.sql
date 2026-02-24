@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS users (
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT fk_users_account_status
-    FOREIGN KEY (account_status_id) REFERENCES account_status(id),
+    FOREIGN KEY (account_status_id) REFERENCES account_status(id)
 );
 
 -- Account status table
@@ -38,5 +38,5 @@ CREATE TABLE IF NOT EXISTS user_roles (
     FOREIGN KEY (user_id) REFERENCES users(id),
 
     CONSTRAINT fk_user_roles_roles
-    FOREIGN KEY (role_id) REFERENCES roles(id),
+    FOREIGN KEY (role_id) REFERENCES roles(id)
 );

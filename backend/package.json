@@ -4,7 +4,10 @@
   "main": "index.js",
   "scripts": {
     "dev": "nodemon scr/app.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "db:schema": "mysql -u root -p -e \"source sql/schema.sql\"",
+    "db:seed": "mysql -u root -p -e \"source sql/seed.sql\"",
+    "db:seed-admin": "node scripts/seedAdmin.js",
+    "db:setup": "npm run db:schema && npm run db:seed && npm run db:seed-admin"
   },
   "keywords": [],
   "author": "",
