@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "dev": "nodemon scr/app.js",
+    "dev": "nodemon src/app.js",
     "db:schema": "mysql -u root -p -e \"source sql/schema.sql\"",
     "db:seed": "mysql -u root -p -e \"source sql/seed.sql\"",
     "db:seed-admin": "node scripts/seedAdmin.js",
