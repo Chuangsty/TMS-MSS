@@ -24,7 +24,9 @@ async function seedAdmin() {
     );
     // Throw error if no 'ACTIVE' status
     if (activeStatus.length === 0) {
-      throw new Error("ACTIVE status not found.");
+      const err = new Error("ACTIVE status not found.");
+      err.status = 500;
+      throw err;
     }
     const activeStatusId = activeStatus[0].id;
 
@@ -34,7 +36,9 @@ async function seedAdmin() {
     );
     // Throw error if no 'ADMIN' role
     if (adminRole.length === 0) {
-      throw new Error("ADMIN role not found. Run lookup seed first.");
+      const err = new Error("ADMIN role not found. Run lookup seed first.");
+      err.status = 500;
+      throw err;
     }
     const adminRoleId = adminRole[0].id;
 
@@ -66,7 +70,7 @@ async function seedAdmin() {
     // Assign ADMIN role (if not already)
     await conn.query(
       "INSERT IGNORE INTO user_roles (user_id, role_id) VALUES (?, ?)",
-      [adminUserId, adminRole.id],
+      [adminUserId, adminRoleId],
     );
 
     await conn.commit();
@@ -82,7 +86,7 @@ async function seedAdmin() {
     process.exitCode = 1; // Tells Node: The script failed (0 = success, 1 = error)
   } finally {
     // This runs no matter what
-    conn.release(); // Returns the connection back to the pool
+    if (conn) conn.release(); // Returns the connection back to the pool
     await pool.end();
   }
 }
