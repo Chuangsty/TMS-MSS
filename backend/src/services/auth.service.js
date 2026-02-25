@@ -21,8 +21,10 @@ export async function loginService({ email, password }) {
     throw err;
   }
 
-  // Query the database for user with matching email
-  // Join account_status to check for ACTIVE/DISABLED
+  /*
+  Query the database for user with matching email
+  Join account_status to check for ACTIVE/DISABLED
+  Get user + status from DB */
   const [userInfo] = await pool.query(
     `SELECT
         u.id,
@@ -39,7 +41,7 @@ export async function loginService({ email, password }) {
 
   // If no user is found
   if (userInfo.length === 0) {
-    const err = new Error("Invalid credentials");
+    const err = new Error("Invalid user credentials");
     err.status = 401;
     throw err;
   }
@@ -57,7 +59,7 @@ export async function loginService({ email, password }) {
   const ok = await bcrypt.compare(password, user.password_hash);
   //   If password doesn't match
   if (!ok) {
-    const err = new Error("Invalid credentials");
+    const err = new Error("Invalid password");
     err.status = 401;
     throw err;
   }
@@ -71,7 +73,7 @@ export async function loginService({ email, password }) {
     [user.id],
   );
 
-  //   Convert role id into simple array like "ADMIN" or you can say a string for better view
+  // Convert role id into simple array like "ADMIN" for better view
   const roles = roleUserInfo.map((r) => r.slug);
 
   // Create JWT token

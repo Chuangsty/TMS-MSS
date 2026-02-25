@@ -1,7 +1,7 @@
 // Usage: for example requireRole("ADMIN")
 export function requireRole(roleSlug) {
   return (req, res, next) => {
-    // Get user's roles from request (attached by requireAuth)
+    // Get user's roles from request (attached by requireAuth from auth.middleware.js)
     // Default to empty array if undefined
     const roles = req.user?.roles || [];
 
