@@ -8,7 +8,7 @@ npm run db:setup
 
 mysql -u root -p
 USE tms_mss
-SHow tables
+SHOW tables
 
 # Running the program of back and front end respectively:
 
