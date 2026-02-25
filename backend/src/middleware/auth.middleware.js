@@ -25,7 +25,7 @@ export async function requireAuth(req, res, next) {
     }
 
     // Load latest user status from DB (role updates/disabled users take effect immediately)
-    const [userInfo] = await pool.query(
+    const [rows] = await pool.query(
       `SELECT 
                 u.id,
                 u.username,
@@ -37,15 +37,15 @@ export async function requireAuth(req, res, next) {
             LIMIT 1`,
       [jwtData.userId], // Passing the decoded value into your SQL query as a parameter (use the userId stored inside the verified token)
     );
-    // Return something like userInfo = [{ id: 1, username: "chuang", email: "chuang@email.com", status_slug: "ACTIVE"}];
+    // Return something like rows = [{ id: 1, username: "chuang", email: "chuang@email.com", status_slug: "ACTIVE"}];
 
-    // If userInfo contains nothing
-    if (userInfo.length === 0) {
+    // If rows contains nothing
+    if (rows.length === 0) {
       const err = new Error("Invalid token user");
       err.status = 401;
       throw err;
     }
-    const user = userInfo[0];
+    const user = rows[0];
 
     // Prevents disabled account from using still-valid tokens
     if (user.status_slug !== "ACTIVE") {
@@ -55,7 +55,7 @@ export async function requireAuth(req, res, next) {
     }
 
     // Load roles
-    const [roleUserInfo] = await pool.query(
+    const [roleRows] = await pool.query(
       `SELECT r.slug
             FROM user_roles ur
             JOIN roles r ON r.id = ur.role_id
@@ -68,7 +68,7 @@ export async function requireAuth(req, res, next) {
       id: user.id,
       username: user.username,
       email: user.email,
-      roles: roleUserInfo.map((r) => r.slug),
+      roles: roleRows.map((r) => r.slug),
     };
 
     next();

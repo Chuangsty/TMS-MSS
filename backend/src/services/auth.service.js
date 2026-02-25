@@ -25,7 +25,7 @@ export async function loginService({ email, password }) {
   Query the database for user with matching email
   Join account_status to check for ACTIVE/DISABLED
   Get user + status from DB */
-  const [userInfo] = await pool.query(
+  const [rows] = await pool.query(
     `SELECT
         u.id,
         u.username,
@@ -40,13 +40,13 @@ export async function loginService({ email, password }) {
   );
 
   // If no user is found
-  if (userInfo.length === 0) {
+  if (rows.length === 0) {
     const err = new Error("Invalid user credentials");
     err.status = 401;
     throw err;
   }
   // Extract user row
-  const user = userInfo[0];
+  const user = rows[0];
 
   //   If user account is not "ACTIVE"
   if (user.status_slug !== "ACTIVE") {
@@ -65,7 +65,7 @@ export async function loginService({ email, password }) {
   }
 
   // Load user role(s) from user_roles table
-  const [roleUserInfo] = await pool.query(
+  const [roleRows] = await pool.query(
     `SELECT r.slug
     FROM user_roles ur
     JOIN roles r ON r.id = ur.role_id
@@ -74,7 +74,7 @@ export async function loginService({ email, password }) {
   );
 
   // Convert role id into simple array like "ADMIN" for better view
-  const roles = roleUserInfo.map((r) => r.slug);
+  const roles = roleRows.map((r) => r.slug);
 
   // Create JWT token
   // Payload contains only userId (minimal info = security-first)

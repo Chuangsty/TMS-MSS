@@ -7,7 +7,7 @@ dotenv.config();
 // Creating default admin credentials
 const ADMIN_USERNAME = process.env.SEED_ADMIN_USERNAME || "admin";
 const ADMIN_EMAIL = process.env.SEED_ADMIN_EMAIL || "teochuangming3@gmail.com";
-const ADMIN_PASSWORD = process.env.SEED_ADMIN_PASSWORD || "admin@Contro1";
+const ADMIN_PASSWORD = process.env.SEED_ADMIN_PASSWORD || "adm1n@Cont";
 
 // Defines an async function to seed the admin account
 async function seedAdmin() {
