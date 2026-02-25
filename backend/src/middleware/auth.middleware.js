@@ -14,7 +14,15 @@ export async function requireAuth(req, res, next) {
     }
 
     // Verify token signature + expiry (token & JWT_SECRET) for all actions below
-    const jwtData = jwt.verify(token, process.env.JWT_SECRET);
+    let jwtData;
+    try {
+      jwtData = jwt.verify(token, process.env.JWT_SECRET); // verify for jwt (signature validation if token signed with server's secret key & token expiration)
+    } catch (e) {
+      // Normalize JWT errors: malformed / invalid signature / expired
+      const err = new Error("Unauthorized");
+      err.status = 401;
+      throw err;
+    }
 
     // Load latest user status from DB (role updates/disabled users take effect immediately)
     const [userInfo] = await pool.query(

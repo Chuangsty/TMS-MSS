@@ -59,7 +59,7 @@ export async function loginService({ email, password }) {
   const ok = await bcrypt.compare(password, user.password_hash);
   //   If password doesn't match
   if (!ok) {
-    const err = new Error("Invalid password");
+    const err = new Error("Invalid credentials");
     err.status = 401;
     throw err;
   }

@@ -48,12 +48,12 @@ async function seedAdmin() {
       [ADMIN_USERNAME],
     );
 
+    const password_hash = await bcrypt.hash(ADMIN_PASSWORD, 10); // hash the ADMIN_PASSWORD with bcrypt
+    // 10: salt rounds (or cost factor) -> Controls how computationally expensive the hashing process is
+
     let adminUserId;
     // 3.1) If ADMIN user doesnt exist =============
     if (existingUsers.length === 0) {
-      const password_hash = await bcrypt.hash(ADMIN_PASSWORD, 10); // hash the ADMIN_PASSWORD with bcrypt
-      // 10: salt rounds (or cost factor) -> Controls how computationally expensive the hashing process is
-
       const [adminUserInfo] = await conn.query(
         // The [] SELECT many rows of data
         "INSERT INTO users (username, email, password_hash, account_status_id) VALUES (?, ?, ?, ?)",
@@ -66,6 +66,20 @@ async function seedAdmin() {
     // 3.2) If ADMIN already exist =================
     else {
       adminUserId = existingUsers[0].id; // use existing
+
+      // UPDATE existing admin: email + password + set ACTIVE
+      await conn.query(
+        `UPDATE users
+        SET username = ?, email = ?, password_hash = ?, account_status_id = ?
+        WHERE id = ?`,
+        [
+          ADMIN_USERNAME,
+          ADMIN_EMAIL,
+          password_hash,
+          activeStatusId,
+          adminUserId,
+        ],
+      );
     }
 
     // 4) Assign ADMIN role (if not already) =======
