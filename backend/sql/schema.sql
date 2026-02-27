@@ -1,6 +1,13 @@
 CREATE DATABASE IF NOT EXISTS tms_mss;
 USE tms_mss;
 
+-- Account status table
+CREATE TABLE IF NOT EXISTS account_status(
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    slug VARCHAR(20) NOT NULL UNIQUE,
+    status_name VARCHAR(50) NOT NULL UNIQUE
+);
+
 -- Users table
 CREATE TABLE IF NOT EXISTS users (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -12,13 +19,6 @@ CREATE TABLE IF NOT EXISTS users (
 
     CONSTRAINT fk_users_account_status
     FOREIGN KEY (account_status_id) REFERENCES account_status(id)
-);
-
--- Account status table
-CREATE TABLE IF NOT EXISTS account_status(
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    slug VARCHAR(20) NOT NULL UNIQUE,
-    status_name VARCHAR(50) NOT NULL UNIQUE
 );
 
 -- Roles table

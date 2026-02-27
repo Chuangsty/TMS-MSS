@@ -15,6 +15,7 @@ function validatePassword(pw) {
   return null; // Return null as no error in pw
 }
 
+// Email policy: Proper email format
 function validateEmail(email) {
   if (typeof email !== "string" || email.trim() === "") return "Email is required";
   // trim() removes whitespace from the beginning and end of a string. e.g. (spaces " ", tabs \t, new lines \n)
@@ -60,7 +61,7 @@ export async function listUsersService() {
 }
 
 // ADMIN: onboarding of users + role assignment: e.g. { username, email, password, roles }
-export async function createUserService({ username, email, password, roles = [] }) {
+export async function adminCreateUserService({ username, email, password, roles = [] }) {
   // Basic validation (keep it simple but safe)
   if (!username || !email || !password) {
     const err = new Error("username, email, and password are required");
@@ -85,6 +86,20 @@ export async function createUserService({ username, email, password, roles = [] 
     if (!activeStatus) {
       const err = new Error("ACTIVE status not found in DB");
       err.status = 500;
+      throw err;
+    }
+
+    const emailErr = validateEmail(email);
+    if (emailErr) {
+      const err = new Error(emailErr);
+      err.status = 400;
+      throw err;
+    }
+
+    const pwErr = validatePassword(password);
+    if (pwErr) {
+      const err = new Error(pwErr);
+      err.status = 400;
       throw err;
     }
 
@@ -135,8 +150,8 @@ export async function createUserService({ username, email, password, roles = [] 
   }
 }
 
-// ADMIN: update user state (no delete)
-export async function userStatusService({ targetUserId, actorUserId, statusSlug }) {
+// ADMIN: update users details
+export async function adminUpdateUserService({ targetUserId, actorUserId, patch }) {
   // Valid ID (prevent invalid or malicious input from reaching your database logic)
   if (!Number.isInteger(targetUserId) || targetUserId <= 0) {
     // Make sure targetUserId is a number and its not negative: proper default id number
@@ -145,129 +160,162 @@ export async function userStatusService({ targetUserId, actorUserId, statusSlug 
     throw err;
   }
 
-  // Prevent admin from disabling themselves (safety)
-  if (actorUserId === targetUserId) {
-    const err = new Error("You cannot disable your own account as an ADMIN");
-    err.status = 400;
-    throw err;
-  }
-  // Validate requested status
-  const allowed = new Set(["ACTIVE", "DISABLED"]);
-  // Throw error if status not part of DB
-  if (!allowed.has(statusSlug)) {
-    const err = new Error("Invalid status (allowed: ACTIVE, DISABLED)");
-    err.status = 400;
-    throw err;
-  }
+  // Check: if userID is admin himself
+  const isSelf = actorUserId === targetUserId;
 
-  // Get status id from account_status table
-  const [[statusRow]] = await pool.query("SELECT id FROM account_status WHERE slug = ? LIMIT 1", [statusSlug]);
-  // If status id not found
-  if (!statusRow) {
-    const err = new Error(`Status ${statusSlug} not found. Seed account_status first.`);
-    err.status = 500;
-    throw err;
-  }
-
-  // Update user status
-  const [res] = await pool.query("UPDATE users SET account_status_id = ? WHERE id = ?", [statusRow.id, targetUserId]);
-  // If updated user not found
-  if (res.affectedRows === 0) {
-    const err = new Error("User not found");
-    err.status = 404;
-    throw err;
-  }
-
-  return { message: `User status updated to ${statusSlug}` };
-}
-
-// ADMIN: reset password (without changing user id)
-export async function resetUserPasswordService({ targetUserId, newPassword }) {
-  // Necessary validation (prevent invalid or malicious input from reaching your database logic)
-  if (!Number.isInteger(targetUserId) || targetUserId <= 0) {
-    // Make sure targetUserId is a number and its not negative: proper default id number
-    const err = new Error("Invalid user id");
-    err.status = 400;
-    throw err;
-  }
-
-  // Throwing error with validatePassword function
-  const pwErr = validatePassword(newPassword);
-  if (pwErr) {
-    const err = new Error(pwErr);
-    err.status = 400;
-    throw err;
-  }
-
-  // Hashing new password
-  const password_hash = await bcrypt.hash(newPassword, 10);
-
-  // Updating DB with new hashed password at target user
-  const [res] = await pool.query("UPDATE users SET password_hash = ? WHERE id = ?", [password_hash, targetUserId]);
-  // Throw error if the userId being updated doesn't match DB
-  if (res.affectedRows === 0) {
-    const err = new Error("User not found");
-    err.status = 404;
-    throw err;
-  }
-
-  // Success: password reset success message
-  return { message: "Password reset successful" };
-}
-
-// ADMIN: assigning/removing role START ==================================================================
-export async function updateUserRolesService({ targetUserId, roles }) {
-  // Necessary user id validation (prevent invalid or malicious input from reaching your database logic)
-  if (!Number.isInteger(targetUserId) || targetUserId <= 0) {
-    // Make sure targetUserId is a number and its not negative: proper default id number
-    const err = new Error("Invalid user id");
-    err.status = 400;
-    throw err;
-  }
-
-  // Role(s) is/are mandatory
-  if (!roleSlug || typeof roleSlug !== "string") {
-    const err = new Error("roleSlug is required");
-    err.status = 400;
-    throw err;
-  }
-
-  // Utilize transaction to have consistent inputs (prevent incomplete data insertion)
   const conn = await pool.getConnection();
   try {
     await conn.beginTransaction();
 
-    // 1) Ensure user exists
-    const [userRows] = await pool.query("SELECT id FROM users WHERE id = ? LIMIT 1", [targetUserId]);
-    // Throw error if the userId being selected doesn't match DB
-    if (userRows.length === 0) {
+    // Ensure target user exists
+    const [[user]] = await conn.query("SELECT id FROM users WHERE id = ? LIMIT 1", [targetUserId]);
+    if (!user) {
       const err = new Error("User not found");
       err.status = 404;
       throw err;
     }
 
-    // 2) Fetch roles in ONE query (same style as createUserService)
-    const [dbRoles] = await conn.query("SELECT id, slug FROM roles WHERE slug IN (?)", [roles]);
+    // 1) Update username/email if provided
+    if (patch.username != null || patch.email != null) {
+      if (patch.username != null) patch.username = String(patch.username).trim();
+      if (patch.email != null) patch.email = String(patch.email).trim().toLowerCase();
 
-    // 3) Validate unknown roles (security-first)
-    if (dbRoles.length !== roles.length) {
-      const found = new Set(dbRoles.map((r) => r.slug));
-      const unknown = roles.filter((r) => !found.has(r));
+      // Uniqueness checks
+      if (patch.username) {
+        const [[u]] = await conn.query("SELECT id FROM users WHERE username = ? AND id <> ? LIMIT 1", [patch.username, targetUserId]);
+        if (u) {
+          const err = new Error("Username already exists");
+          err.status = 409;
+          throw err;
+        }
+      }
+      if (patch.email) {
+        const [[e]] = await conn.query("SELECT id FROM users WHERE email = ? AND id <> ? LIMIT 1", [patch.email, targetUserId]);
+        if (e) {
+          const err = new Error("Email already exists");
+          err.status = 409;
+          throw err;
+        }
+      }
+      const emailErr = validateEmail(patch.email);
+      if (emailErr) {
+        const err = new Error(emailErr);
+        err.status = 400;
+        throw err;
+      }
 
-      const err = new Error(`Unknown role(s): ${unknown.join(", ")}`);
-      err.status = 400;
-      throw err;
+      await conn.query(
+        `UPDATE users
+         SET username = COALESCE(?, username),
+             email = COALESCE(?, email)
+         WHERE id = ?`,
+        [patch.username ?? null, patch.email ?? null, targetUserId],
+      );
     }
 
-    // 4) Replace roles: delete old → insert new
-    await conn.query("DELETE FROM user_roles WHERE user_id = ?", [targetUserId]);
+    // 2) Update status if provided (ACTIVE/DISABLED)
+    if (patch.status != null) {
+      // Prevent ADMIN from changing their own status
+      if (isSelf) {
+        const err = new Error("You cannot change your own account status");
+        err.status = 400;
+        throw err;
+      }
 
-    for (const r of dbRoles) {
-      await conn.query("INSERT INTO user_roles (user_id, role_id) VALUES (?, ?)", [targetUserId, r.id]);
+      const status = String(patch.status).toUpperCase();
+      const allowed = new Set(["ACTIVE", "DISABLED"]);
+
+      if (!allowed.has(status)) {
+        const err = new Error("Invalid status (allowed: ACTIVE, DISABLED)");
+        err.status = 400;
+        throw err;
+      }
+
+      const [[statusRow]] = await conn.query("SELECT id FROM account_status WHERE slug = ? LIMIT 1", [status]);
+
+      if (!statusRow) {
+        const err = new Error(`Status ${status} not found`);
+        err.status = 500;
+        throw err;
+      }
+
+      await conn.query("UPDATE users SET account_status_id = ? WHERE id = ?", [statusRow.id, targetUserId]);
+    }
+
+    // 3) Replace roles if provided
+    if (patch.roles != null) {
+      if (!Array.isArray(patch.roles) || patch.roles.length === 0) {
+        const err = new Error("At least one role is required");
+        err.status = 400;
+        throw err;
+      }
+
+      const uniqueRoles = [...new Set(patch.roles)];
+      const [dbRoles] = await conn.query("SELECT id, slug FROM roles WHERE slug IN (?)", [uniqueRoles]);
+
+      if (dbRoles.length !== uniqueRoles.length) {
+        const found = new Set(dbRoles.map((r) => r.slug));
+        const unknown = uniqueRoles.filter((r) => !found.has(r));
+        const err = new Error(`Unknown role(s): ${unknown.join(", ")}`);
+        err.status = 400;
+        throw err;
+      }
+
+      // Prevent ADMIN from removing their own ADMIN role
+      if (isSelf) {
+        const hasAdmin = dbRoles.some((r) => r.slug === "ADMIN");
+        if (!hasAdmin) {
+          const err = new Error("You cannot remove your own ADMIN role");
+          err.status = 400;
+          throw err;
+        }
+      }
+
+      await conn.query("DELETE FROM user_roles WHERE user_id = ?", [targetUserId]);
+
+      for (const r of dbRoles) {
+        await conn.query("INSERT INTO user_roles (user_id, role_id) VALUES (?, ?)", [targetUserId, r.id]);
+      }
+    }
+
+    // 4) Update password
+    if (patch.newPassword != null) {
+      const newPassword = String(patch.newPassword);
+
+      // Reuse your existing validatePassword(newPassword)
+      const pwErr = validatePassword(newPassword);
+      if (pwErr) {
+        const err = new Error(pwErr);
+        err.status = 400;
+        throw err;
+      }
+
+      // Fetch current password hash
+      const [[currentUser]] = await conn.query("SELECT password_hash FROM users WHERE id = ? LIMIT 1", [targetUserId]);
+
+      if (!currentUser) {
+        const err = new Error("User not found");
+        err.status = 404;
+        throw err;
+      }
+
+      // Compare new password with existing hash
+      const isSamePassword = await bcrypt.compare(newPassword, currentUser.password_hash);
+
+      if (isSamePassword) {
+        const err = new Error("New password cannot be the same as the current password");
+        err.status = 400;
+        throw err;
+      }
+
+      // Hash and update new password if different
+      const password_hash = await bcrypt.hash(newPassword, 10);
+
+      await conn.query("UPDATE users SET password_hash = ? WHERE id = ?", [password_hash, targetUserId]);
     }
 
     await conn.commit();
-    return { message: "User roles updated", roles };
+    return { message: "User updated" };
   } catch (err) {
     await conn.rollback();
     throw err;
@@ -275,4 +323,3 @@ export async function updateUserRolesService({ targetUserId, roles }) {
     conn.release();
   }
 }
-// ADMIN: assigning role END ====================================================================
