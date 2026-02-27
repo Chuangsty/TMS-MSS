@@ -3,11 +3,8 @@ import cors from "cors"; // Cross-Origin Resource Sharing (allows frontend (diff
 import dotenv from "dotenv";
 
 import authRoutes from "./routes/auth.routes.js";
-import userRoutes from "./routes/users.routes.js";
-import {
-  notFoundHandler,
-  errorHandler,
-} from "./middleware/error.middleware.js";
+import adminRoutes from "./routes/admin.routes.js";
+import { notFoundHandler, errorHandler } from "./middleware/error.middleware.js";
 
 dotenv.config();
 
@@ -20,7 +17,7 @@ app.use(express.json()); // Parses JSON body
 
 // Routes
 app.use("/api/auth", authRoutes);
-app.use("/api/users", userRoutes);
+app.use("/api/admin", adminRoutes);
 
 // Quick health endpoint (useful to check server running on Postman)
 app.get("/api/health", (req, res) => {

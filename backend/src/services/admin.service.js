@@ -30,7 +30,7 @@ export async function listUsersService() {
     `SELECT u.id, u.username, u.email, s.slug AS status, u.created_at
         FROM users u
         JOIN account_status s ON s.id = u.account_status_id
-        ORDER BY u.created_at ASC`,
+        ORDER BY u.created_at DESC`,
   );
 
   // Role(s) assignment
@@ -62,6 +62,8 @@ export async function listUsersService() {
 
 // ADMIN: onboarding of users + role assignment: e.g. { username, email, password, roles }
 export async function adminCreateUserService({ username, email, password, roles = [] }) {
+  const conn = await pool.getConnection();
+
   // Basic validation (keep it simple but safe)
   if (!username || !email || !password) {
     const err = new Error("username, email, and password are required");
@@ -76,12 +78,16 @@ export async function adminCreateUserService({ username, email, password, roles 
     throw err;
   }
 
-  const conn = await pool.getConnection();
   try {
     await conn.beginTransaction();
 
+    // Normalize username and email
+    const cleanUsername = String(username).trim();
+    const cleanEmail = String(email).trim().toLowerCase();
+
     // Set DEFAULT ACTIVE status ID
     const [[activeStatus]] = await conn.query(`SELECT id FROM account_status WHERE slug = 'ACTIVE' LIMIT 1`);
+
     // Throw err if "ACTIVE" status not found in seed
     if (!activeStatus) {
       const err = new Error("ACTIVE status not found in DB");
@@ -89,7 +95,7 @@ export async function adminCreateUserService({ username, email, password, roles 
       throw err;
     }
 
-    const emailErr = validateEmail(email);
+    const emailErr = validateEmail(cleanEmail);
     if (emailErr) {
       const err = new Error(emailErr);
       err.status = 400;
@@ -103,6 +109,21 @@ export async function adminCreateUserService({ username, email, password, roles 
       throw err;
     }
 
+    // Check username unique
+    const [[u]] = await conn.query("SELECT id FROM users WHERE username = ? LIMIT 1", [cleanUsername]);
+    if (u) {
+      const err = new Error("Username already exists");
+      err.status = 409;
+      throw err;
+    }
+    // Check email unique
+    const [[e]] = await conn.query("SELECT id FROM users WHERE email = ? LIMIT 1", [cleanEmail]);
+    if (e) {
+      const err = new Error("Email already exists");
+      err.status = 409;
+      throw err;
+    }
+
     // Hash password
     const password_hash = await bcrypt.hash(password, 10);
 
@@ -110,17 +131,20 @@ export async function adminCreateUserService({ username, email, password, roles 
     const [insertRes] = await conn.query(
       `INSERT INTO users (username, email, password_hash, account_status_id)
        VALUES (?, ?, ?, ?)`,
-      [username, email, password_hash, activeStatus.id],
+      [cleanUsername, cleanEmail, password_hash, activeStatus.id],
     );
     // Auto generate a user ID from inserting result from onboarding
     const newUserId = insertRes.insertId;
 
+    // Normalizing roles to prevent bugs
+    const normalizedRoles = [...new Set(roles.map((r) => String(r).trim().toUpperCase()))];
+
     // Fetch selected roles in one query
-    const [dbRoles] = await conn.query(`SELECT id, slug FROM roles WHERE slug IN (?)`, [roles]);
+    const [dbRoles] = await conn.query(`SELECT id, slug FROM roles WHERE slug IN (?)`, [normalizedRoles]);
     // Validate role slugs exist
-    if (dbRoles.length !== roles.length) {
+    if (dbRoles.length !== normalizedRoles.length) {
       const found = new Set(dbRoles.map((r) => r.slug));
-      const unknown = roles.filter((r) => !found.has(r));
+      const unknown = normalizedRoles.filter((r) => !found.has(r));
       const err = new Error(`Unknown role(s): ${unknown.join(", ")}`);
       err.status = 400;
       throw err;
@@ -136,9 +160,9 @@ export async function adminCreateUserService({ username, email, password, roles 
       message: "User created",
       user: {
         id: newUserId,
-        username,
-        email,
-        roles,
+        username: cleanUsername,
+        email: cleanEmail,
+        roles: normalizedRoles,
         status: "ACTIVE",
       },
     };
@@ -177,40 +201,40 @@ export async function adminUpdateUserService({ targetUserId, actorUserId, patch 
 
     // 1) Update username/email if provided
     if (patch.username != null || patch.email != null) {
-      if (patch.username != null) patch.username = String(patch.username).trim();
-      if (patch.email != null) patch.email = String(patch.email).trim().toLowerCase();
+      if (patch.username != null) {
+        patch.username = String(patch.username).trim();
 
-      // Uniqueness checks
-      if (patch.username) {
         const [[u]] = await conn.query("SELECT id FROM users WHERE username = ? AND id <> ? LIMIT 1", [patch.username, targetUserId]);
+
         if (u) {
           const err = new Error("Username already exists");
           err.status = 409;
           throw err;
         }
       }
-      if (patch.email) {
+
+      if (patch.email != null) {
+        patch.email = String(patch.email).trim().toLowerCase();
+
+        // Validate format first
+        const emailErr = validateEmail(patch.email);
+        if (emailErr) {
+          const err = new Error(emailErr);
+          err.status = 400;
+          throw err;
+        }
+
+        // Then check uniqueness
         const [[e]] = await conn.query("SELECT id FROM users WHERE email = ? AND id <> ? LIMIT 1", [patch.email, targetUserId]);
+
         if (e) {
           const err = new Error("Email already exists");
           err.status = 409;
           throw err;
         }
       }
-      const emailErr = validateEmail(patch.email);
-      if (emailErr) {
-        const err = new Error(emailErr);
-        err.status = 400;
-        throw err;
-      }
 
-      await conn.query(
-        `UPDATE users
-         SET username = COALESCE(?, username),
-             email = COALESCE(?, email)
-         WHERE id = ?`,
-        [patch.username ?? null, patch.email ?? null, targetUserId],
-      );
+      await conn.query(`UPDATE users SET username = COALESCE(?, username), email = COALESCE(?, email) WHERE id = ?`, [patch.username ?? null, patch.email ?? null, targetUserId]);
     }
 
     // 2) Update status if provided (ACTIVE/DISABLED)
@@ -250,7 +274,8 @@ export async function adminUpdateUserService({ targetUserId, actorUserId, patch 
         throw err;
       }
 
-      const uniqueRoles = [...new Set(patch.roles)];
+      // Normalize role names
+      const uniqueRoles = [...new Set(patch.roles.map((r) => String(r).trim().toUpperCase()))];
       const [dbRoles] = await conn.query("SELECT id, slug FROM roles WHERE slug IN (?)", [uniqueRoles]);
 
       if (dbRoles.length !== uniqueRoles.length) {

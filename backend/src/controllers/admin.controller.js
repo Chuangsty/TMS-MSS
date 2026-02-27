@@ -1,7 +1,4 @@
-import { Router } from "express";
-import { listUsersService, adminCreateUserService, adminUpdateUserService } from "../services/users.service.js";
-
-const router = Router();
+import { listUsersService, adminCreateUserService, adminUpdateUserService } from "../services/admin.service.js";
 
 // Admin: Users List
 export async function listUsersController(req, res, next) {
@@ -45,5 +42,3 @@ export async function adminUpdateUserController(req, res, next) {
     next(err);
   }
 }
-
-export default router;
