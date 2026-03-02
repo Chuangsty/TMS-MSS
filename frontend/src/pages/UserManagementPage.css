@@ -76,3 +76,38 @@
 .statusChip--disabled {
   background: #1f2a44 !important;
 }
+/* ===== Prevent horizontal distortion when editing ===== */
+
+.usersPageContainer {
+  padding: 24px 40px;
+}
+
+/* allow safe horizontal scroll if screen is too small */
+.usersTableContainer {
+  overflow-x: auto;
+}
+
+/* KEY: stop columns from expanding when inputs appear */
+.usersTable {
+  width: 100%;
+  table-layout: fixed;
+}
+
+/* allow long content to wrap instead of stretching columns */
+.usersCell {
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+/* make inputs/selects fit inside cell instead of forcing wider columns */
+.usersOnboardRow .MuiTextField-root,
+.MuiTableBody-root .MuiTextField-root {
+  width: 100%;
+}
+
+.usersSelect,
+.usersSelect--wide {
+  min-width: 0 !important;
+  width: 100%;
+}

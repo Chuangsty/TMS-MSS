@@ -12,7 +12,14 @@ import PersonAddAltRoundedIcon from "@mui/icons-material/PersonAddAltRounded";
 import { api } from "../api/client";
 import "./UserManagementPage.css";
 
-const ROLE_OPTIONS = ["ADMIN", "PM", "PL", "DEV"];
+const ROLE_OPTIONS = [
+  { slug: "ADMIN", name: "Admin" },
+  { slug: "PROJECT_LEAD", name: "Project Lead" },
+  { slug: "PROJECT_MANAGER", name: "Project Manager" },
+  { slug: "DEVELOPER", name: "Developer" },
+];
+const roleNameBySlug = new Map(ROLE_OPTIONS.map((r) => [r.slug, r.name]));
+
 const STATUS_OPTIONS = ["ACTIVE", "DISABLED"];
 
 function StatusChip({ status }) {
@@ -21,6 +28,7 @@ function StatusChip({ status }) {
 }
 
 export default function UserManagementPage() {
+
   const nav = useNavigate();
 
   const [users, setUsers] = useState([]);
@@ -37,7 +45,7 @@ export default function UserManagementPage() {
     email: "",
     password: "",
     status: "ACTIVE",
-    roles: [""],
+    roles: [],
   });
 
   // edit row
@@ -138,7 +146,7 @@ export default function UserManagementPage() {
   }
 
   return (
-    <Container maxWidth="lg">
+    <Container maxWidth={false} disableGutters className="usersPageContainer">
       {errMsg ? (
         <Alert severity="error" className="usersPage__alert">
           {errMsg}
@@ -170,12 +178,12 @@ export default function UserManagementPage() {
           ) : null}
         </div>
 
-        <TableContainer>
-          <Table size="small">
+        <TableContainer className="usersTableContainer">
+          <Table size="small" className="usersTable">
             <TableHead>
               <TableRow className="usersHeaderRow">
                 {["Name", "Email", "Password", "Status", "Role", "Actions", "Joined Date"].map((h) => (
-                  <TableCell key={h} className="usersHeaderCell">
+                  <TableCell key={h} className="usersHeaderCell usersCell">
                     {h}
                   </TableCell>
                 ))}
@@ -195,20 +203,26 @@ export default function UserManagementPage() {
                   <TextField size="small" placeholder="Password" type="password" value={newUser.password} onChange={(e) => setNewUser((p) => ({ ...p, password: e.target.value }))} />
                 </TableCell>
                 <TableCell>
-                  <Select size="small" value={newUser.status} onChange={(e) => setNewUser((p) => ({ ...p, status: e.target.value }))} className="usersSelect">
-                    {STATUS_OPTIONS.map((s) => (
-                      <MenuItem key={s} value={s}>
-                        {s === "ACTIVE" ? "Active" : "Disable"}
-                      </MenuItem>
-                    ))}
-                  </Select>
+                  <StatusChip status="ACTIVE" />
                 </TableCell>
-                <TableCell>
-                  <Select size="small" multiple value={newUser.roles} onChange={(e) => setNewUser((p) => ({ ...p, roles: e.target.value }))} renderValue={(selected) => selected.join(", ")} className="usersSelect usersSelect--wide">
+                <TableCell className="usersCell">
+                  <Select
+                    size="small"
+                    multiple
+                    value={newUser.roles} // array of slugs
+                    onChange={(e) => setNewUser((p) => ({ ...p, roles: e.target.value }))}
+                    displayEmpty
+                    renderValue={(selected) =>
+                      selected.length === 0
+                        ? "Select role(s)"
+                        : selected.map((slug) => roleNameBySlug.get(slug) || slug).join(", ")
+                    }
+                    className="usersSelect usersSelect--wide"
+                  >
                     {ROLE_OPTIONS.map((r) => (
-                      <MenuItem key={r} value={r}>
-                        <Checkbox checked={newUser.roles.indexOf(r) > -1} />
-                        <ListItemText primary={r} />
+                      <MenuItem key={r.slug} value={r.slug}>
+                        <Checkbox checked={newUser.roles.indexOf(r.slug) > -1} />
+                        <ListItemText primary={r.name} />
                       </MenuItem>
                     ))}
                   </Select>
@@ -247,18 +261,29 @@ export default function UserManagementPage() {
                       )}
                     </TableCell>
 
-                    <TableCell>
+                    <TableCell className="usersCell">
                       {isEditing ? (
-                        <Select size="small" multiple value={editDraft.roles} onChange={(e) => setEditDraft((p) => ({ ...p, roles: e.target.value }))} renderValue={(selected) => selected.join(", ")} className="usersSelect usersSelect--wide">
+                        <Select
+                          size="small"
+                          multiple
+                          value={editDraft.roles} // array of slugs
+                          onChange={(e) => setEditDraft((p) => ({ ...p, roles: e.target.value }))}
+                          renderValue={(selected) =>
+                            selected.map((slug) => roleNameBySlug.get(slug) || slug).join(", ")
+                          }
+                          className="usersSelect usersSelect--wide"
+                        >
                           {ROLE_OPTIONS.map((r) => (
-                            <MenuItem key={r} value={r}>
-                              <Checkbox checked={editDraft.roles.indexOf(r) > -1} />
-                              <ListItemText primary={r} />
+                            <MenuItem key={r.slug} value={r.slug}>
+                              <Checkbox checked={editDraft.roles.includes(r.slug)} />
+                              <ListItemText primary={r.name} />
                             </MenuItem>
                           ))}
                         </Select>
                       ) : (
-                        (u.roles || []).join(", ")
+                        (u.roles || [])
+                        .map((slug) => ROLE_OPTIONS.find((r) => r.slug === slug)?.name)
+                        .join(", ")
                       )}
                     </TableCell>
 
