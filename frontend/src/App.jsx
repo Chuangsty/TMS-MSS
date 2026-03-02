@@ -19,7 +19,9 @@ export default function App() {
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="/login" element={<LoginPage />} />
 
-        <Route path="/menu" element={<HeaderBar />}></Route>
+        <Route path="/menu" element={<HeaderBar />}>
+          <Route index element={<MainMenuPage />} />
+        </Route>
 
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
