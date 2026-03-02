@@ -1,4 +1,4 @@
-# TMS-MSS
+# Task management System
 
 # On new start-up: run db script once
 
