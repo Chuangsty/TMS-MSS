@@ -1,0 +1,144 @@
+.appsPageContainer {
+  padding: 24px 40px;
+}
+
+.appsPageAlert {
+  margin-bottom: 12px;
+}
+
+.appsCard {
+  padding: 16px;
+  border-radius: 16px !important;
+  background: #fff;
+}
+
+/* Title row + New App button */
+.appsHeaderRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 10px;
+}
+
+.appsTitle {
+  font-size: 26px !important;
+  font-weight: 900 !important;
+}
+
+.appsNewAppBtn {
+  border-radius: 999px !important;
+  padding: 7px 14px !important;
+  font-weight: 800 !important;
+}
+
+.appsNewAppBtnPlaceholder {
+  width: 132px; /* keeps layout stable when button hidden */
+}
+
+/* Search row */
+.appsToolsRow {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  margin-bottom: 14px;
+}
+
+.appsSearch {
+  width: 280px;
+}
+
+/* List */
+.appsList {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* App card */
+.appItem {
+  border-radius: 14px !important;
+  padding: 14px 14px 12px 14px;
+  background: #fff;
+}
+
+.appItemTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.appTitle {
+  font-size: 20px !important;
+  font-weight: 900 !important;
+}
+
+.appEditBtn {
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 10px !important;
+}
+
+/* Meta row */
+.appMetaRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  font-size: 12.5px;
+  color: #555;
+  margin-bottom: 10px;
+}
+
+.appMetaItem {
+  white-space: nowrap;
+}
+
+.appMetaSep {
+  color: #bbb;
+}
+
+/* Description box */
+.appDescBox {
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 10px;
+  padding: 10px 12px;
+  color: #444;
+  line-height: 1.35;
+  font-size: 13px;
+  background: #fafafa;
+  min-height: 54px;
+}
+
+/* Bottom row */
+.appBottomRow {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 14px;
+  margin-top: 10px;
+}
+
+.appTasksTodo {
+  font-size: 12.5px !important;
+  color: #555;
+}
+
+.appNewTaskBtn {
+  border-radius: 999px !important;
+  font-weight: 800 !important;
+  padding: 5px 12px !important;
+}
+
+.appNewTaskBtnPlaceholder {
+  width: 122px; /* keeps layout stable when button hidden */
+}
+
+.appsEmpty {
+  padding: 28px;
+  text-align: center;
+  color: #666;
+  border: 1px dashed rgba(0, 0, 0, 0.18);
+  border-radius: 14px;
+}

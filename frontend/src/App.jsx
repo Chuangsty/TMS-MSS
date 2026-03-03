@@ -18,9 +18,15 @@ export default function App() {
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="/login" element={<LoginPage />} />
 
+        {/* Admin's view page of user management */}
         <Route path="/users" element={<HeaderBar />}>
           <Route index element={<UserManagementPage />} />
         </Route>
+
+        {/* Non-Admin's view page of project management */}
+        {/* <Route path="/applications" element={<HeaderBar />}>
+          <Route index element={<ProjectManagementPage />} />
+        </Route> */}
 
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
