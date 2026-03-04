@@ -21,7 +21,17 @@ export default function LoginPage() {
     try {
       const response = await api.post("/api/auth/login", { email, password });
       console.log(response.data);
-      nav("/users");
+
+      const me = await api.get("/api/auth/me");
+      console.log(me.data);
+
+      const roles = me.data?.user?.roles ?? []; // Option chaining to get user role(s)
+
+      if (roles.includes("ADMIN")) {
+        nav("/users");
+      } else {
+        nav("/applications");
+      }
     } catch (err) {
       setErrMsg(err?.response?.data?.error || "Login failed");
     } finally {

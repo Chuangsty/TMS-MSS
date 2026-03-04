@@ -58,6 +58,15 @@ export default function HeaderBar() {
               <MenuItem
                 onClick={async () => {
                   setAnchorEl(null);
+                  nav("/applications");
+                }}
+              >
+                Applications
+              </MenuItem>
+
+              <MenuItem
+                onClick={async () => {
+                  setAnchorEl(null);
                   await handleLogout();
                 }}
               >

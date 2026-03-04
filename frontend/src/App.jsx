@@ -5,6 +5,7 @@ import { CssBaseline, ThemeProvider, createTheme } from "@mui/material";
 import LoginPage from "./pages/LoginPage.jsx";
 import HeaderBar from "./components/HeaderBar";
 import UserManagementPage from "./pages/UserManagementPage.jsx";
+import ApplicationsDashboardPage from "./pages/ApplicationDashboardPage.jsx";
 
 const theme = createTheme({
   typography: { fontFamily: "Inter, system-ui, Arial, sans-serif" },
@@ -24,9 +25,9 @@ export default function App() {
         </Route>
 
         {/* Non-Admin's view page of project management */}
-        {/* <Route path="/applications" element={<HeaderBar />}>
-          <Route index element={<ProjectManagementPage />} />
-        </Route> */}
+        <Route path="/applications" element={<HeaderBar />}>
+          <Route index element={<ApplicationsDashboardPage />} />
+        </Route>
 
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>

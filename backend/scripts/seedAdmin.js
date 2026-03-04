@@ -7,7 +7,7 @@ dotenv.config();
 // Creating default admin credentials
 const ADMIN_USERNAME = process.env.SEED_ADMIN_USERNAME || "admin";
 const ADMIN_EMAIL = process.env.SEED_ADMIN_EMAIL || "teochuangming3@gmail.com";
-const ADMIN_PASSWORD = process.env.SEED_ADMIN_PASSWORD || "adm1n@Cont";
+const ADMIN_PASSWORD = process.env.SEED_ADMIN_PASSWORD || "Qwer1234!";
 
 // Defines an async function to seed the admin account
 async function seedAdmin() {
@@ -19,9 +19,7 @@ async function seedAdmin() {
     await conn.beginTransaction();
 
     // 1) Get 'ACTIVE' status ==============
-    const [activeStatus] = await conn.query(
-      "SELECT id FROM account_status WHERE slug = 'ACTIVE' LIMIT 1",
-    );
+    const [activeStatus] = await conn.query("SELECT id FROM account_status WHERE slug = 'ACTIVE' LIMIT 1");
     // 1.1) Throw error if no 'ACTIVE' status
     if (activeStatus.length === 0) {
       const err = new Error("ACTIVE status not found. Run db:seed first.");
@@ -31,9 +29,7 @@ async function seedAdmin() {
     const activeStatusId = activeStatus[0].id;
 
     // 2) Get 'ADMIN' role =================
-    const [adminRole] = await conn.query(
-      "SELECT id FROM roles WHERE slug = 'ADMIN' LIMIT 1",
-    );
+    const [adminRole] = await conn.query("SELECT id FROM roles WHERE slug = 'ADMIN' LIMIT 1");
     // 2.1) Throw error if no 'ADMIN' role
     if (adminRole.length === 0) {
       const err = new Error("ADMIN role not found. Run db:seed first.");
@@ -43,10 +39,7 @@ async function seedAdmin() {
     const adminRoleId = adminRole[0].id;
 
     // 3) Check if admin user exists ==============
-    const [existingUsers] = await conn.query(
-      "SELECT id FROM users WHERE username = ? LIMIT 1",
-      [ADMIN_USERNAME],
-    );
+    const [existingUsers] = await conn.query("SELECT id FROM users WHERE username = ? LIMIT 1", [ADMIN_USERNAME]);
 
     const password_hash = await bcrypt.hash(ADMIN_PASSWORD, 10); // hash the ADMIN_PASSWORD with bcrypt
     // 10: salt rounds (or cost factor) -> Controls how computationally expensive the hashing process is
@@ -72,21 +65,12 @@ async function seedAdmin() {
         `UPDATE users
         SET username = ?, email = ?, password_hash = ?, account_status_id = ?
         WHERE id = ?`,
-        [
-          ADMIN_USERNAME,
-          ADMIN_EMAIL,
-          password_hash,
-          activeStatusId,
-          adminUserId,
-        ],
+        [ADMIN_USERNAME, ADMIN_EMAIL, password_hash, activeStatusId, adminUserId],
       );
     }
 
     // 4) Assign ADMIN role (if not already) =======
-    await conn.query(
-      "INSERT IGNORE INTO user_roles (user_id, role_id) VALUES (?, ?)",
-      [adminUserId, adminRoleId],
-    );
+    await conn.query("INSERT IGNORE INTO user_roles (user_id, role_id) VALUES (?, ?)", [adminUserId, adminRoleId]);
 
     await conn.commit();
 
