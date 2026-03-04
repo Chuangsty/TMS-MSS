@@ -1,4 +1,4 @@
-USE tms_mss;
+USE tms;
 
 -- =========================
 -- ACCOUNT STATUS
@@ -49,7 +49,7 @@ WHERE
 -- STATES (Apps + Plans)
 -- =========================
 INSERT IGNORE INTO states (slug, state_name) VALUES
-('ON_GOING', 'On Going'),
+('ON_GOING', 'On-going'),
 ('COMPLETED', 'Completed');
 
 -- =========================
