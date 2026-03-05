@@ -29,6 +29,16 @@ export default function ApplicationsDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [errMsg, setErrMsg] = useState("");
 
+  // Add app pop up React feature
+  const [openCreate, setOpenCreate] = useState(false); // Add user dialog hidden/popup state
+  const [createDraft, setCreateDraft] = useState({ // Holds user inputs
+    name: "",
+    startDate: "",
+    endDate: "",
+    description: "",
+  });
+  const [toast, setToast] = useState({ open: false, severity: "success", msg: ""}); // Notification popup of success/fail creation
+
   useEffect(() => {
     let ignore = false;
 
@@ -59,6 +69,11 @@ export default function ApplicationsDashboardPage() {
   }, [nav]);
 
   const isProjectLead = roles.includes("PROJECT_LEAD");
+
+  // Fucntion for add app dialog popup
+  async function addAppPopup() {
+    
+  }
 
   // Function to add app
   async function addApp() {
@@ -113,7 +128,7 @@ export default function ApplicationsDashboardPage() {
           {isProjectLead ? (
             // <Button variant="outlined" startIcon={<AddIcon />} className="appsNewAppBtn">
             // On click add new application
-            <Button variant="outlined" startIcon={<AddIcon />} onClick={addApp} className="appsNewAppBtn">
+            <Button variant="outlined" startIcon={<AddIcon />} onClick={addAppPopup} className="appsNewAppBtn">
               New App
             </Button>
           ) : (
