@@ -20,15 +20,15 @@ export default function App() {
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="/login" element={<LoginPage />} />
 
-        {/* Admin's view page of user management */}
-        <Route element={<ProtectedRoute />}>
+        {/* Non-Admin's view page of project management */}
+        <Route element={<ProtectedRoute roles={["ADMIN"]} />}>
           <Route element={<HeaderBar />}>
             <Route path="/users" index element={<UserManagementPage />} />
           </Route>
         </Route>
 
-        {/* Non-Admin's view page of project management */}
-        <Route element={<ProtectedRoute roles={["ADMIN"]} />}>
+        {/* Admin's view page of user management */}
+        <Route element={<ProtectedRoute />}>
           <Route element={<HeaderBar />}>
             <Route path="/applications" index element={<ApplicationsDashboardPage />} />
           </Route>
