@@ -1,9 +1,14 @@
-import express from "express";
-import { getApps } from "../services/application.service";
-import { requireAuth } from "../middleware/auth.middleware";
+import { Router } from "express";
+import { createAppsController, listAppsController } from "../controllers/appDash.controller.js";
+import { requireAuth } from "../middleware/auth.middleware.js";
+import { requireRole } from "../middleware/role.middleware.js";
 
-const router = express.Router();
+const router = Router();
 
-router.get("/apps", requireAuth, getApps);
+// GET /api/apps
+router.get("/", requireAuth, listAppsController);
+
+// POST /api/apps
+router.post("/", requireAuth, requireRole("PROJECT_LEAD"), createAppsController);
 
 export default router;

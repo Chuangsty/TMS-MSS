@@ -77,12 +77,12 @@ CREATE TABLE IF NOT EXISTS task_states (
 CREATE TABLE IF NOT EXISTS applications (
   app_id INT AUTO_INCREMENT PRIMARY KEY,
 
-  app_name VARCHAR(100) NOT NULL,
+  app_name VARCHAR(100) NOT NULL UNIQUE,
   app_acronym VARCHAR(20) NOT NULL UNIQUE, -- generate in backend when creating app
   app_description TEXT NULL,
 
-  app_startDate DATE NULL,
-  app_endDate DATE NULL,
+  app_startDate DATE NOT NULL,
+  app_endDate DATE NOT NULL,
 
   project_lead INT NOT NULL, -- users.id with project lead role
   state_id INT NOT NULL DEFAULT 1, -- states.id ("on-going", "completed", but by default set to on-going)
@@ -107,8 +107,8 @@ CREATE TABLE IF NOT EXISTS plans (
     GENERATED ALWAYS AS (CONCAT(app_acronym, '-', plan_no)) STORED,
 
   plan_name VARCHAR(100) NOT NULL,
-  plan_startDate DATE NULL,
-  plan_endDate DATE NULL,
+  plan_startDate DATE NOT NULL,
+  plan_endDate DATE NOT NULL,
 
   project_manager INT NOT NULL, -- users.id with project manager role
   state_id INT NOT NULL DEFAULT 1,
