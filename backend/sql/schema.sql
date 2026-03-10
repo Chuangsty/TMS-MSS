@@ -114,10 +114,6 @@ CREATE TABLE IF NOT EXISTS plans (
   creator INT NOT NULL, -- users.id with project manager role
   state_id INT NOT NULL DEFAULT 1,
 
-  PRIMARY KEY (plan_id),
-
-  UNIQUE KEY uq_task_no_per_app (app_id, task_no),
-
   UNIQUE KEY uq_plan_no_per_app (app_id, plan_no), -- prevent duplicate plan numbers within same app
   UNIQUE KEY uq_plan_name_per_app (app_id, plan_name), -- prevent duplicate plan names within same app
 
