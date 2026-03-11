@@ -80,14 +80,13 @@ CREATE TABLE IF NOT EXISTS applications (
   app_name VARCHAR(100) NOT NULL UNIQUE,
   app_acronym VARCHAR(20) NOT NULL UNIQUE, -- generate in backend when creating app
   app_description TEXT NULL,
-
+  
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   app_startDate DATE NOT NULL,
   app_endDate DATE NOT NULL,
 
   project_lead INT NOT NULL, -- users.id with project lead role
   state_id INT NOT NULL DEFAULT 1, -- states.id ("on-going", "completed", but by default set to on-going)
-  
-  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
   next_task_no INT NOT NULL DEFAULT 1, -- per-app running number counter for task
   next_plan_no INT NOT NULL DEFAULT 1, -- per-app running number counter for plan

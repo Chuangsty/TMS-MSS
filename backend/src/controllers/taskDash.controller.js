@@ -1,5 +1,6 @@
-import { listTasksService, createTaskService, updateTaskService } from "../services/taskDash.service.js";
+import { listTasksService, createTaskService, updateTaskService, createPlanService } from "../services/taskDash.service.js";
 
+// START of task controller ==========================================
 export async function listTasksController(req, res, next) {
   try {
     const app_Id = Number(req.params.appId);
@@ -10,7 +11,6 @@ export async function listTasksController(req, res, next) {
     next(err);
   }
 }
-
 export async function createTaskController(req, res, next) {
   try {
     const app_id = Number(req.params.appId);
@@ -28,7 +28,6 @@ export async function createTaskController(req, res, next) {
     next(err);
   }
 }
-
 export async function updateTaskController(req, res, next) {
   try {
     const task_id = req.params.taskId;
@@ -45,3 +44,26 @@ export async function updateTaskController(req, res, next) {
     next(err);
   }
 }
+// END of task controller ============================================
+
+// START of plan controller ==========================================
+export async function createPlanController(req, res, next) {
+  try {
+    const app_id = Number(req.params.appId);
+    const { plan_name, plan_startDate, plan_endDate, task_ids } = req.body;
+
+    const result = await createPlanService({
+      app_id,
+      plan_name,
+      plan_startDate,
+      plan_endDate,
+      task_ids,
+      actorUserId: req.user.id,
+    });
+
+    res.status(201).json(result);
+  } catch (err) {
+    next(err);
+  }
+}
+// END of plan controller ============================================

@@ -6,10 +6,11 @@ export async function listAppsService() {
       a.app_id,
       a.app_name,
       a.app_acronym,
+      a.created_at,
       a.app_startDate,
       a.app_endDate,
       a.app_description,
-      s.state_name AS state_id,
+      s.state_name AS state_name,
       u.username AS project_lead
     FROM applications a
     JOIN states s ON s.id = a.state_id
@@ -112,20 +113,32 @@ export async function createAppsService({ app_name, app_startDate, app_endDate, 
       [cleanName, finalAcronym, stateRow.id, actorUserId, app_startDate, app_endDate, app_description],
     );
 
+    const [[newApp]] = await conn.query(
+      `
+      SELECT
+        a.app_id,
+        a.app_name,
+        a.app_acronym,
+        a.created_at,
+        a.app_startDate,
+        a.app_endDate,
+        a.app_description,
+        s.state_name AS state_name,
+        u.username AS project_lead
+      FROM applications a
+      JOIN states s ON s.id = a.state_id
+      JOIN users u ON u.id = a.project_lead
+      WHERE a.app_id = ?
+      LIMIT 1
+      `,
+      [result.insertId],
+    );
+
     await conn.commit();
 
     return {
       message: "Application created",
-      app: {
-        app_id: result.insertId,
-        app_name: cleanName,
-        app_acronym: finalAcronym,
-        state_name: "On-going",
-        project_lead: actorUserId,
-        app_startDate: app_startDate,
-        app_endDate: app_endDate,
-        app_description: cleanDescription,
-      },
+      app: newApp,
     };
   } catch (err) {
     await conn.rollback();
