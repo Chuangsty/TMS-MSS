@@ -3,8 +3,8 @@ import { listTasksService, createTaskService, updateTaskService, createPlanServi
 // START of task controller ==========================================
 export async function listTasksController(req, res, next) {
   try {
-    const app_Id = Number(req.params.appId);
-    const tasks = await listTasksService(app_Id);
+    const app_acronym = req.params.appAcronym;
+    const tasks = await listTasksService(app_acronym);
 
     res.json(tasks);
   } catch (err) {
@@ -13,11 +13,11 @@ export async function listTasksController(req, res, next) {
 }
 export async function createTaskController(req, res, next) {
   try {
-    const app_id = Number(req.params.appId);
+    const app_acronym = req.params.appAcronym;
     const { task_name, task_description } = req.body;
 
     const result = await createTaskService({
-      app_id,
+      app_acronym,
       task_name,
       task_description,
       actorUserId: req.user.id,
@@ -49,11 +49,11 @@ export async function updateTaskController(req, res, next) {
 // START of plan controller ==========================================
 export async function createPlanController(req, res, next) {
   try {
-    const app_id = Number(req.params.appId);
+    const app_acronym = req.params.appAcronym;
     const { plan_name, plan_startDate, plan_endDate, task_ids } = req.body;
 
     const result = await createPlanService({
-      app_id,
+      app_acronym,
       plan_name,
       plan_startDate,
       plan_endDate,

@@ -1,12 +1,13 @@
 import { pool } from "../config/db.js";
 
-export async function listTasksService(app_id) {
-  // validate id
-  if (!Number.isInteger(app_id) || app_id <= 0) {
-    const err = new Error("Invalid app_id");
+export async function listTasksService(app_acronym) {
+  // validate acronym
+  if (!app_acronym || String(app_acronym).trim() === "") {
+    const err = new Error("App acronym is required");
     err.status = 400;
     throw err;
   }
+  const cleanAcronym = String(app_acronym).trim();
 
   const [rows] = await pool.query(
     `
@@ -16,7 +17,7 @@ export async function listTasksService(app_id) {
       t.task_name,
       t.task_description,
       t.task_note,
-      t.plan_id,
+      p.plan_name,
       t.task_created_at,
       t.task_taken_at,
       t.task_update_at,
@@ -30,21 +31,23 @@ export async function listTasksService(app_id) {
       d.username AS developer_username
 
     FROM tasks t
+    JOIN applications a ON a.app_id = t.app_id
     JOIN task_states ts ON ts.id = t.task_state_id
     JOIN users c ON c.id = t.creator
     LEFT JOIN users d ON d.id = t.developer
-    WHERE t.app_id = ?
+    LEFT JOIN plans p ON p.plan_id = t.plan_id
+    WHERE a.app_acronym = ?
     ORDER BY t.task_no DESC
     `,
-    [app_id],
+    [cleanAcronym],
   );
   return rows;
 }
 
-export async function createTaskService({ app_id, task_name, task_description, actorUserId }) {
-  // validate id
-  if (!Number.isInteger(app_id) || app_id <= 0) {
-    const err = new Error("Invalid app_id");
+export async function createTaskService({ app_acronym, task_name, task_description, actorUserId }) {
+  // validate acronym
+  if (!app_acronym || String(app_acronym).trim() === "") {
+    const err = new Error("App acronym is required");
     err.status = 400;
     throw err;
   }
@@ -56,6 +59,7 @@ export async function createTaskService({ app_id, task_name, task_description, a
     throw err;
   }
 
+  const cleanAcronym = String(app_acronym).trim();
   const cleanTaskName = String(task_name).trim();
   const cleanTaskDescription = task_description == null ? null : String(task_description).trim();
 
@@ -67,13 +71,13 @@ export async function createTaskService({ app_id, task_name, task_description, a
     // 1) Get app info
     const [[app]] = await conn.query(
       `
-            SELECT app_id, app_acronym, next_task_no
-            FROM applications
-            WHERE app_id = ?
-            LIMIT 1
-            FOR UPDATE
-            `,
-      [app_id],
+      SELECT app_id, app_acronym, next_task_no
+      FROM applications
+      WHERE app_acronym = ?
+      LIMIT 1
+      FOR UPDATE
+      `,
+      [cleanAcronym],
     );
     if (!app) {
       const err = new Error("Application not found");
@@ -82,7 +86,7 @@ export async function createTaskService({ app_id, task_name, task_description, a
     }
 
     // 2) Check task name unique per app
-    const [[t]] = await conn.query("SELECT task_name FROM tasks WHERE app_id = ? AND task_name = ? LIMIT 1", [app_id, cleanTaskName]);
+    const [[t]] = await conn.query("SELECT task_name FROM tasks WHERE app_id = ? AND task_name = ? LIMIT 1", [app.app_id, cleanTaskName]);
     if (t) {
       const err = new Error("Task name already exists in this application");
       err.status = 409;
@@ -352,9 +356,10 @@ export async function updateTaskService({ task_id, task_description, actorUserId
   }
 }
 
-export async function createPlanService({ app_id, plan_name, plan_startDate, plan_endDate, task_ids = [], actorUserId }) {
-  if (!Number.isInteger(app_id) || app_id <= 0) {
-    const err = new Error("Invalid app_id");
+export async function createPlanService({ app_acronym, plan_name, plan_startDate, plan_endDate, task_ids = [], actorUserId }) {
+  // validate acronym
+  if (!app_acronym || String(app_acronym).trim() === "") {
+    const err = new Error("App acronym is required");
     err.status = 400;
     throw err;
   }
@@ -383,6 +388,7 @@ export async function createPlanService({ app_id, plan_name, plan_startDate, pla
     throw err;
   }
 
+  const cleanAcronym = String(app_acronym).trim();
   const cleanPlanName = String(plan_name).trim();
 
   const conn = await pool.getConnection();
@@ -401,11 +407,11 @@ export async function createPlanService({ app_id, plan_name, plan_startDate, pla
         app_endDate,
         next_plan_no
       FROM applications
-      WHERE app_id = ?
+      WHERE app_acronym = ?
       LIMIT 1
       FOR UPDATE
       `,
-      [app_id],
+      [cleanAcronym],
     );
 
     if (!app) {
@@ -413,6 +419,8 @@ export async function createPlanService({ app_id, plan_name, plan_startDate, pla
       err.status = 404;
       throw err;
     }
+
+    const app_id = app.app_id;
 
     const cleanPlanStart = String(plan_startDate).slice(0, 10);
     const cleanPlanEnd = String(plan_endDate).slice(0, 10);
@@ -448,23 +456,7 @@ export async function createPlanService({ app_id, plan_name, plan_startDate, pla
       throw err;
     }
 
-    // 3) Get default plan state
-    const [[planState]] = await conn.query(
-      `
-      SELECT id
-      FROM states
-      WHERE slug = 'ON_GOING'
-      LIMIT 1
-      `,
-    );
-
-    if (!planState) {
-      const err = new Error("Default plan state not found");
-      err.status = 500;
-      throw err;
-    }
-
-    // 4) Get TODO task state
+    // 3) Get TODO task state
     const [[todoTaskState]] = await conn.query(
       `
       SELECT id
@@ -480,7 +472,7 @@ export async function createPlanService({ app_id, plan_name, plan_startDate, pla
       throw err;
     }
 
-    // 5) Get OPEN task state
+    // 4) Get OPEN task state
     const [[openTaskState]] = await conn.query(
       `
       SELECT id
@@ -489,14 +481,13 @@ export async function createPlanService({ app_id, plan_name, plan_startDate, pla
       LIMIT 1
       `,
     );
-
     if (!openTaskState) {
       const err = new Error("OPEN task state not found");
       err.status = 500;
       throw err;
     }
 
-    // 6) Validate tasks
+    // 5) Validate tasks
     // retrieves all tasks the user selected
     const [taskRows] = await conn.query(
       `
@@ -559,12 +550,11 @@ export async function createPlanService({ app_id, plan_name, plan_startDate, pla
         plan_name,
         plan_startDate,
         plan_endDate,
-        creator,
-        state_id
+        creator
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
       `,
-      [plan_id, app_id, plan_no, cleanPlanName, plan_startDate, plan_endDate, actorUserId, planState.id],
+      [plan_id, app_id, plan_no, cleanPlanName, plan_startDate, plan_endDate, actorUserId],
     );
 
     // 2) Build appended note
@@ -643,12 +633,9 @@ export async function createPlanService({ app_id, plan_name, plan_startDate, pla
         p.plan_startDate,
         p.plan_endDate,
         p.creator,
-        u.username AS creator_username,
-        p.state_id,
-        s.slug AS state_slug
+        u.username AS creator_username
       FROM plans p
       JOIN users u ON u.id = p.creator
-      JOIN states s ON s.id = p.state_id
       WHERE p.plan_id = ?
       LIMIT 1
       `,

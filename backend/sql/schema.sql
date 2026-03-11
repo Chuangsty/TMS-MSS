@@ -111,7 +111,6 @@ CREATE TABLE IF NOT EXISTS plans (
   plan_endDate DATE NOT NULL,
 
   creator INT NOT NULL, -- users.id with project manager role
-  state_id INT NOT NULL DEFAULT 1,
 
   UNIQUE KEY uq_plan_no_per_app (app_id, plan_no), -- prevent duplicate plan numbers within same app
   UNIQUE KEY uq_plan_name_per_app (app_id, plan_name), -- prevent duplicate plan names within same app
@@ -122,10 +121,7 @@ CREATE TABLE IF NOT EXISTS plans (
     FOREIGN KEY (app_id) REFERENCES applications(app_id),
 
   CONSTRAINT fk_plans_pm
-    FOREIGN KEY (creator) REFERENCES users(id),
-
-  CONSTRAINT fk_plans_state
-    FOREIGN KEY (state_id) REFERENCES states(id)
+    FOREIGN KEY (creator) REFERENCES users(id)
 );
 
 -- Tasks table
