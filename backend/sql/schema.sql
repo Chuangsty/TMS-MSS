@@ -146,7 +146,7 @@ CREATE TABLE IF NOT EXISTS tasks (
 
   task_created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   task_taken_at TIMESTAMP NULL,
-  task_update_at TIMESTAMP NULL,
+  task_update_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
   UNIQUE KEY uq_task_no_per_app (app_id, task_no),
   UNIQUE KEY uq_task_name_per_app (app_id, task_name),

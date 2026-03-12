@@ -148,10 +148,13 @@ export async function createAppsService({ app_name, app_startDate, app_endDate, 
   }
 }
 
-export async function updateAppsService({ app_id, app_startDate, app_endDate, app_description }) {
-  // validate targetted app id
-  if (!Number.isInteger(app_id) || app_id <= 0) {
-    const err = new Error("Invalid app_id");
+export async function updateAppsService({ app_acronym, app_id, app_startDate, app_endDate, app_description }) {
+  const cleanAcronym = String(app_acronym ?? "")
+    .trim()
+    .toUpperCase();
+  // validate acronym
+  if (cleanAcronym === "") {
+    const err = new Error("App acronym is required");
     err.status = 400;
     throw err;
   }
@@ -160,15 +163,15 @@ export async function updateAppsService({ app_id, app_startDate, app_endDate, ap
   try {
     await conn.beginTransaction();
 
-    const [[existing]] = await conn.query(
+    const [[app]] = await conn.query(
       `SELECT app_id
        FROM applications
-       WHERE app_id = ?
+       WHERE app_acronym = ?
        LIMIT 1`,
-      [app_id],
+      [cleanAcronym],
     );
 
-    if (!existing) {
+    if (!app) {
       const err = new Error("Application not found");
       err.status = 404;
       throw err;
@@ -216,7 +219,7 @@ export async function updateAppsService({ app_id, app_startDate, app_endDate, ap
       throw err;
     }
 
-    values.push(app_id);
+    values.push(app.app_id);
 
     await conn.query(
       `

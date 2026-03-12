@@ -7,6 +7,7 @@ import authRoutes from "./routes/auth.routes.js";
 import adminRoutes from "./routes/admin.routes.js";
 import appDashRoutes from "./routes/appDash.routes.js";
 import taskDashRoutes from "./routes/taskDash.routes.js";
+import workFlowRoutes from "./routes/workflow.routes.js";
 
 import { notFoundHandler, errorHandler } from "./middleware/error.middleware.js";
 
@@ -32,6 +33,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/apps", appDashRoutes);
 app.use("/api", taskDashRoutes);
+app.use("/api", workFlowRoutes);
 
 // Quick health endpoint (useful to check server running on Postman)
 app.get("/api/health", (req, res) => {

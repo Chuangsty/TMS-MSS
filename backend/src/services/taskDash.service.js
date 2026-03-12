@@ -1,13 +1,13 @@
 import { pool } from "../config/db.js";
 
 export async function listTasksService(app_acronym) {
+  const cleanAcronym = String(app_acronym ?? "").trim();
   // validate acronym
-  if (!app_acronym || String(app_acronym).trim() === "") {
+  if (cleanAcronym === "") {
     const err = new Error("App acronym is required");
     err.status = 400;
     throw err;
   }
-  const cleanAcronym = String(app_acronym).trim();
 
   const [rows] = await pool.query(
     `
@@ -186,12 +186,9 @@ export async function createTaskService({ app_acronym, task_name, task_descripti
             t.task_name,
             t.task_description,
             t.task_note,
-            t.plan_id,
             t.task_created_at,
-            t.task_taken_at,
             t.task_update_at,
-            ts.task_state_name AS task_state,
-            ts.id AS task_state_id
+            ts.task_state_name AS task_state
         FROM tasks t
         JOIN task_states ts ON ts.id = t.task_state_id
         WHERE t.task_id = ?
@@ -293,7 +290,7 @@ export async function updateTaskService({ task_id, task_description, actorUserId
 
     // get update time
     const updateAtTimestamp = new Date().toLocaleString("sv-SE", { timeZone: "Asia/Singapore" });
-    const updateLine = `[ ${updateAtTimestamp}, Task state: ${openState.task_state_name} ] Project Manager ${actor.username} updated the description.`;
+    const updateLine = `[ ${updateAtTimestamp}, Task state: ${openState.task_state_name} ] Project Lead ${actor.username} updated the description.`;
 
     const nextNote = existingTask.task_note ? `${existingTask.task_note}\n${updateLine}` : updateLine;
 
@@ -303,8 +300,7 @@ export async function updateTaskService({ task_id, task_description, actorUserId
       UPDATE tasks
       SET
         task_description = ?,
-        task_note = ?,
-        task_update_at = CURRENT_TIMESTAMP
+        task_note = ?
       WHERE task_id = ?
       `,
       [cleanTaskDescription, nextNote, cleanTaskId],
@@ -604,8 +600,7 @@ export async function createPlanService({ app_acronym, plan_name, plan_startDate
         SET
           plan_id = ?,
           task_state_id = ?,
-          task_note = ?,
-          task_update_at = CURRENT_TIMESTAMP
+          task_note = ?
         WHERE task_id = ?
         `,
         [plan_id, todoTaskState.id, nextNote, task.task_id],

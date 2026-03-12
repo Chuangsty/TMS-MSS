@@ -12,6 +12,6 @@ router.get("/", requireAuth, listAppsController);
 router.post("/", requireAuth, requireRole("PROJECT_LEAD"), createAppsController);
 
 // PATCH /api/apps/:id
-router.patch("/:id", requireAuth, requireRole("PROJECT_LEAD"), updateAppsController);
+router.patch("/:appAcronym", requireAuth, requireRole("PROJECT_LEAD"), updateAppsController);
 
 export default router;
