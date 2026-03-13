@@ -332,7 +332,7 @@ export async function takeTaskService({ task_id, actorUserId }) {
     buildUpdateFields: ({ actor, targetState, nextNote }) => ({
       developer: actor.id,
       task_state_id: targetState.id,
-      task_taken_at: new Date(),
+      task_taken_at: makeTimestamp(),
       task_note: nextNote,
     }),
 
